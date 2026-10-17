@@ -1,0 +1,71 @@
+{
+  "date": "2026-10-17",
+  "note": "开发验证，非同学互评。留出问题未参与意图训练；样本很小，不能当作通用准确率。",
+  "nodes": 26,
+  "edges": 45,
+  "sources": 16,
+  "intent": {
+    "correct": 9,
+    "total": 10,
+    "predictions": [
+      {
+        "q": "请用通俗语言解释一下",
+        "want": "explain",
+        "got": "explain"
+      },
+      {
+        "q": "能举例讲讲它做什么吗",
+        "want": "explain",
+        "got": "explain"
+      },
+      {
+        "q": "入门需要先学哪些课程",
+        "want": "course",
+        "got": "course"
+      },
+      {
+        "q": "相关基础知识去哪里学",
+        "want": "course",
+        "got": "course"
+      },
+      {
+        "q": "这两个方案对比有什么差异",
+        "want": "compare",
+        "got": "compare"
+      },
+      {
+        "q": "两种工具各有什么优缺点",
+        "want": "compare",
+        "got": "compare"
+      },
+      {
+        "q": "谁做了这个研究，论文在哪",
+        "want": "trace",
+        "got": "trace"
+      },
+      {
+        "q": "我想核实这条连线的依据",
+        "want": "trace",
+        "got": "trace"
+      },
+      {
+        "q": "在哪些场景不能保证正确",
+        "want": "boundary",
+        "got": "boundary"
+      },
+      {
+        "q": "该技术失败的条件是什么",
+        "want": "boundary",
+        "got": "explain"
+      }
+    ]
+  },
+  "checks": [
+    "节点与来源引用完整",
+    "三图跨节点引用有效",
+    "无关问题拒答",
+    "本校课程不确定性保留",
+    "路线比较与节点问答可用",
+    "合成实验结果可复现"
+  ]
+}
