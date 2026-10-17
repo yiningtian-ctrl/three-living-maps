@@ -1,40 +1,44 @@
-# 三张活地图：有据可查的课程资料问答
+# VLA 驱动的桌面整理机器人：三张活地图
 
-用于 GitHub Pages 的发布包：26 个节点、45 条关系、三图探索、轻量机器学习地图问答、可复现合成实验、来源、学习路径和本地更新记录。
+制作于 2026-10-18。26 个节点，46 条类型关系，22 个文献与资料入口。围绕“把笔放进笔筒、把积木放进盒子”，连接领域、生态与认知。
 
-## 首次发布（只用浏览器）
+## 最简单的 GitHub 发布方法
 
-1. 登录 GitHub，打开 https://github.com/new 。仓库名填写 `three-living-maps`，可见性选 **Public**，勾选 **Add README**，点击 **Create repository**。免费账号的 Pages 使用公开仓库。
-2. 解压上传包，进入仓库的 **Add file → Upload files**。将解压后的 `.github` 文件夹、`docs` 文件夹和本 README 一起拖入。上传的是文件与文件夹，不是 ZIP 压缩包。确认出现 `docs/index.html` 和 `.github/workflows/pages.yml`，然后 **Commit changes** 到 `main`。
-3. 在仓库 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。
-4. 回到 **Actions**，打开 **Publish three living maps**。如果第一次在启用 Pages 前失败，点 **Re-run all jobs**；也可以用 **Run workflow** 从 `main` 手动启动。
-5. 工作流成功后，在 **Settings → Pages → Visit site** 查看网站。网址通常为 `https://你的用户名.github.io/three-living-maps/`。以 GitHub 显示的实际网址为准；发布可能需要等待几分钟。
-6. 用无痕窗口、手机流量和校园网验证免登录访问，再把实际网址交给同学。国内不同网络的可达性尚未由本样本实测。
+1. 解压本次 ZIP，打开外层文件夹，找到里面的 **docs**。
+2. 到 GitHub 仓库首页，选择 **Add file → Upload files**，拖入 **docs 文件夹本身**，提交到 `main`。
+3. 上传后，仓库首页必须直接显示 `docs`；点击后能看到 `index.html`。
+4. 进入 **Settings → Pages → Source → Deploy from a branch**，选择 **main → /docs → Save**。
+5. 等发布成功，点击 **Visit site**。用无痕模式、手机流量与校园网再验证。
 
-## 若没有成功上传 `.github` 文件夹
+关键结构：`仓库根目录/docs/index.html`。不要变成 `仓库根目录/机器人三张地图发布包/docs/index.html`。
 
-网页上传有问题时，可以只上传 `docs` 文件夹，然后在 **Settings → Pages** 选择 **Deploy from a branch → main → /docs → Save**。这是另一种发布方式，两种选一种即可；分支发布使用 GitHub 自动生成的部署流程，不需要自定义工作流。
+可直接在你已创建的 `three-living-maps` 仓库上传新版 docs；相同路径文件会在提交后更新。原来外层目录中的文件不会被该发布路径使用。你的 GitHub 仓库尚未由我代为上传，本包本身不代表已上线。
 
 ## 以后怎样更新
 
-在仓库编辑或重新上传 `docs/data.js` 等文件并提交，GitHub 会按所选发布方式重新部署。网站内部“修改节点”和“反馈表”只保存在访问者自己的浏览器；维护者需收集导出记录、核实内容，再更新仓库。
+在仓库更新 `docs` 中的文件并提交后，GitHub 会按设置重新发布。使用本包的 /docs 分支发布即可，无需手工创建工作流。
 
-## 作业还需完成什么
+## 文献在哪里
 
-- 本校真实课程和培养方案核实、课堂第三个“观”、具体会议类别。
-- 获授权的真实资料测试、至少 3 名非本组同学独立反馈、每位成员真实贡献。
-- 中期以来的持续更新、真实认识变化，以及国内普通网络可访问验证。
-- 样本实现的是本地朴素贝叶斯意图识别与内容检索，不是大语言模型调用。GitHub Pages 托管静态网页，后续模型密钥应保存在独立服务端。
+- 页面“文献与出处”：每条有作者、年份、版本、链接、定位和支持范围。
+- `docs/references.md`：完整参考文献清单。
+- `docs/references.bib`：7 篇核心论文的 BibTeX；只填已核查信息，不虚构卷期页码。
+- `docs/reference.md`：完整文字参考稿，含三图节点、关系和案例。
 
-## 文件
+## 本地浏览与修改
 
-- `docs/index.html`：网站首页。
-- `docs/data.js`：节点、关系、来源与课程入口。
-- `docs/engine.js`：轻量 AI 算法和 75 条训练短句。
-- `docs/reference.md`：完整文字参考稿。
-- `docs/experiment.json`、`docs/experiment.cjs`：合成数据、排名与复现脚本。
-- `.github/workflows/pages.yml`：提交到 `main` 后发布 `docs/` 的配置。
+双击 `docs/index.html` 即可使用内置内容，无需模型密钥或下载依赖。修改节点与关系请编辑 `docs/data.js`。网页内的节点编辑、反馈和更新记录只存当前浏览器，可导出 JSON；核实后需更新仓库才会公开同步。
 
-本发布包不包含原始 Sites 项目配置、Git 历史、依赖目录或凭据。发布的网页与仓库均应只放获准公开的内容。
+`docs/engine.js` 是轻量机器学习意图识别与地图摘录。它不是 VLA 推理、不控制机械臂、不调用大语言模型，也不联网查新。
 
-依据：[GitHub Pages 官方创建说明](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site)、[官方 Actions 发布说明](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)。核查于 2026-10-17。
+## 参考样本的边界
+
+已提供知识框架、论文入口、样本案例和学习路径。未完成本校培养方案核查、真机或 VLA 运行、真实成功率测试、至少 3 人互评、多周记录与成员贡献。它们不能用 AI 编造。
+
+## 维护脚本
+
+有 Node.js 时，在本目录运行 `node build-reference.cjs` 可重生成参考稿和引用清单；`node verify.cjs` 检查节点、来源和问答边界。浏览器验证记录见 `docs/browser-verification.json`，它是开发检查，不是同学互评。
+
+GitHub Pages 托管静态页面；后续若接大模型，请使用独立服务端保护密钥。国内网络访问情况需实际测试，不作可达性保证。
+
+发布规则依据：[GitHub Pages 官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)。

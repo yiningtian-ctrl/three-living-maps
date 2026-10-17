@@ -1,61 +1,25 @@
 (function(root){
-  'use strict';
-  function tokens(text){
-    const s=String(text).toLowerCase(), out=s.match(/[a-z][a-z0-9-]*/g)||[];
-    for(const segment of s.match(/[\u3400-\u9fff]+/g)||[]){
-      for(let i=0;i<segment.length;i++){out.push(segment[i]);if(i+1<segment.length)out.push(segment.slice(i,i+2));}
-    }
-    return out;
-  }
-  const samples={
-    explain:['这是什么概念','请解释一下原理','用简单的话说明作用','能不能举一个例子','这个技术是干什么的','如何理解这个方法','告诉我它的基本含义','帮我讲清楚这个工具','向新生介绍它的作用','这个概念解决什么问题','RAG是什么','什么是文本嵌入','检索是做什么的','重排是什么意思','Faiss的作用是什么'],
-    course:['这个概念应该学什么课','需要什么学习基础','有什么课程和学习资料','我应该从哪里开始学习','有哪些前置知识','推荐一个学习路径','入门该读哪份大纲','以后去哪门课继续学','这个工具要求哪些基础','给我相关课程的入口','检索需要先学什么','文本嵌入如何入门','Faiss可以从哪里学','RAG有什么学习资料','哪些课程覆盖向量基础'],
-    compare:['这两种方法有什么区别','请比较这两个方案','哪个路线更适合','两者分别有什么优缺点','这个方法和另一个怎么选','比较一下作用和局限','在两条技术路线间怎么取舍','它们是替代关系吗','两个工具对比一下','请区分这两个概念','检索和重排有什么区别','向量和关键词对比','Faiss与生成模型的区别','RAG和全文阅读怎么选择','比较两者的适用范围'],
-    trace:['这个结论的来源是什么','有什么证据支持','谁提出了这个方法','哪个团队开发了工具','如何找到原论文','这个关系有依据吗','带我查找出处','我想看它的官方文档','作者和机构是什么关系','来源在哪里可以核实','RAG论文的作者是谁','Faiss是谁开发的','嵌入的资料依据在哪','重排的官方文档在哪','检索示例由谁提供'],
-    boundary:['这个方法有什么局限','什么情况下会失败','有什么风险和不足','能不能保证一定正确','这个方法有哪些适用条件','什么时候不适合用','这项结论有什么反例','有什么问题仍不确定','还有什么地方待核实','会不会误导用户','Faiss有哪些局限','RAG不能保证什么','文本嵌入可能出现哪些错误','检索会不会出错','重排的限制有哪些']
-  };
-  class IntentModel{
-    constructor(training=samples){
-      this.classes=Object.keys(training);this.vocab=new Set();this.counts={};this.total={};this.priors={};
-      const n=Object.values(training).reduce((s,a)=>s+a.length,0);
-      for(const c of this.classes){this.counts[c]={};this.total[c]=0;this.priors[c]=Math.log(training[c].length/n);
-        for(const sentence of training[c])for(const t of tokens(sentence)){this.vocab.add(t);this.counts[c][t]=(this.counts[c][t]||0)+1;this.total[c]++;}}
-    }
-    predict(q){
-      const ts=tokens(q).filter(t=>this.vocab.has(t));
-      const scores=this.classes.map(c=>({label:c,score:this.priors[c]+ts.reduce((s,t)=>s+Math.log(((this.counts[c][t]||0)+1)/(this.total[c]+this.vocab.size)),0)})).sort((a,b)=>b.score-a.score);
-      return {label:scores[0].label,scores,knownTokens:ts.length};
-    }
-  }
-  const aliases={rag:['rag','检索增强生成'],docs:['资料版本','有效版本','版本','通知','截止日期','截止时间','资料权限'],chunk:['切分','分块','chunk','片段','段落'],retrieve:['检索','召回','关键词','bm25','搜索'],embedding:['嵌入','embedding','向量','bge'],rerank:['重排','rerank','交叉编码器'],generate:['生成','拒答','提示词','大模型'],cite:['引用','出处','可追溯'],evaluate:['评估','评价','评测','命中率','hit@1','准确率'],faiss:['faiss'],workflow:['dify','ragflow','编排'],courses:['课程','学习路径','学习基础','前置'],lewis:['lewis','刘易斯'],flag:['flagopen','flagembedding','bge-m3'],sbert:['sentence transformers','sbert'],meta:['meta','fair'],platforms:['langgenius','infiniflow'],venues:['会议','ccf','neurips','acl','sigir'],stakeholders:['付费','维护者','使用者','采购'],resources:['成本','算力','开源','许可'],problem:['需求','问题定义'],system:['系统观','瓶颈'],compare:['反例','对照'],tradeoff:['取舍'],evolution:['发展观','演进'],habits:['成长','协作','分工']};
-  function rankNodes(q,nodes){
-    const qs=tokens(q),qset=new Set(qs),low=q.toLowerCase();
-    const df={};const docs=nodes.map(n=>{const ts=tokens([n.label,n.sub,n.summary,n.why,n.example,n.prereq,n.next].join(' '));const counts={};ts.forEach(t=>counts[t]=(counts[t]||0)+1);for(const t of Object.keys(counts))df[t]=(df[t]||0)+1;return {n,counts};});
-    const idf=t=>Math.log(1+(nodes.length+1)/(1+(df[t]||0)));
-    return docs.map(({n,counts})=>{
-      let overlap=0,norm=0,qn=0;for(const [t,c]of Object.entries(counts)){const v=(1+Math.log(c))*idf(t);norm+=v*v;if(qset.has(t))overlap+=v*idf(t);}for(const t of qset)qn+=idf(t)**2;
-      const matched=(aliases[n.id]||[n.label.toLowerCase()]).filter(a=>low.includes(a));
-      const exact=matched.length?Math.max(...matched.map(a=>a.length))/10:0;
-      return {node:n,score:overlap/Math.sqrt(norm*qn||1)+exact,exact:matched.length>0,overlap:[...qset].filter(t=>counts[t]).length};
-    }).sort((a,b)=>b.score-a.score);
-  }
-  function answer(q,atlas){
-    q=String(q||'').trim().slice(0,500);
-    if(!q)return {intent:'unknown',lead:'请先输入一个与地图相关的问题。',evidence:[],sections:[]};
-    const prediction=model.predict(q),rank=rankNodes(q,atlas.nodes),intent=prediction.label;
-    const exact=rank.filter(x=>x.exact), topical=exact.filter(x=>!['courses','compare','habits','generate'].includes(x.node.id));
-    if(/我们学校|我校|本校|我.*专业|学分|开课学期/.test(q))return {intent:'course',lead:'目前没有你们学校、专业和年级的培养方案，无法确认本校课程名称、学分或开课学期。下面仅列已经核查的公开课学习入口。',evidence:['courses'],sections:atlas.coursePaths.map(p=>({title:p.course,text:p.content+'。定位：'+p.coverage+'。可尝试：'+p.practice+'。',sources:[p.source]}))};
-    if(!topical.length&&!(rank[0].score>.18&&rank[0].overlap>=4))return {intent:'unknown',lead:'现有地图没有足够依据回答这个问题。我只能检索本样本的 RAG、工具、课程入口和分析案例，不能查实时消息或补造事实。',evidence:[],sections:[]};
-    if(/关键词|bm25/.test(q)&&/向量|语义/.test(q)&&/区别|比较|怎么选|对比/.test(q))return {intent:'compare',lead:'这是两条可以比较、也可以组合的检索路线。以下是文档支持的机制差异，尚未在真实课程资料上比较效果。',evidence:['retrieve','embedding','tradeoff'],sections:[{title:'关键词路线',text:'依赖字面匹配，适合精确术语和编号；同义表达可能漏检。应作为小样本基线。',sources:['S02','S09']},{title:'向量路线',text:'比较编码后的文本表示，可用于语义相近表达；可能混淆版本、数字与否定条件。',sources:['S02','S05']},{title:'当前取舍',text:'先在同一批带证据的问题上比较有效证据命中；可评估混合检索。没有实测，不宣布某条路线全面更优。',sources:['S02','S16']}]};
-    const candidates=(topical.length?topical:rank.filter(x=>x.score>.12)).slice(0,3).map(x=>x.node);
-    if(intent==='compare'&&candidates.length<2)return {intent,lead:'比较需要两个明确对象。目前只识别到一个地图对象；请写出第二个名称，例如“比较检索和重排”。地图外的方法需要先补可靠来源。',evidence:candidates.map(n=>n.id),sections:[]};
-    if(intent==='course')return {intent,lead:'先确定要形成的能力，再选择学习入口。以下基础与资源来自地图；本校对应关系尚未核实。',evidence:[...new Set([...candidates.map(n=>n.id),'courses'])],sections:candidates.slice(0,2).map(n=>({title:n.label+'：学习与实践',text:n.prereq+' 下一步：'+n.next,sources:n.sources})).concat(atlas.coursePaths.map(p=>({title:p.course,text:p.content+'。'+p.coverage+'。',sources:[p.source]})))};
-    if(intent==='trace')return {intent,lead:'以下是相关节点、关系与原始来源。研究团队归属按来源发表时信息理解；拟议职责和团队推断不会当作已证实合作。',evidence:candidates.map(n=>n.id),sections:candidates.map(n=>({title:n.label,text:n.why+' 内容性质：'+n.fact+'。',sources:n.sources}))};
-    if(intent==='boundary')return {intent,lead:'这些限制来自地图中已写明的适用条件；它们不等于完整风险清单。',evidence:candidates.map(n=>n.id),sections:candidates.map(n=>({title:n.label+'的边界',text:n.limits,sources:n.sources}))};
-    if(intent==='compare')return {intent,lead:'按作用、局限与下一步实践比较。不同层次的对象可以协同，不应只按名称判断替代关系。',evidence:candidates.slice(0,2).map(n=>n.id),sections:candidates.slice(0,2).map(n=>({title:n.label,text:n.summary+' 局限：'+n.limits+' 验证：'+n.next,sources:n.sources}))};
-    return {intent:'explain',lead:'下面摘取地图中的解释与例子，供你回到节点和来源核查。样本判断与实验证据的范围会一并保留。',evidence:candidates.map(n=>n.id),sections:candidates.slice(0,2).map(n=>({title:n.label,text:n.summary+' 例子：'+n.example+' 边界：'+n.limits,sources:n.sources}))};
-  }
-  const model=new IntentModel();
-  const API={tokens,IntentModel,samples,model,rankNodes,answer};
-  root.MapAI=API;if(typeof module!=='undefined')module.exports=API;
+'use strict';
+function tokens(value){const s=String(value).toLowerCase(),out=s.match(/[a-z][a-z0-9-]*/g)||[];for(const z of s.match(/[\u3400-\u9fff]+/g)||[])for(let i=0;i<z.length;i++){out.push(z[i]);if(i+1<z.length)out.push(z.slice(i,i+2));}return out;}
+const samples={
+explain:['这是什么概念','请解释一下原理','用简单的话说明作用','能不能举一个例子','这个技术是干什么的','如何理解这个方法','帮我讲清楚工具','VLA是什么','什么是模仿学习','闭环控制是什么意思','坐标变换有什么作用','机器人怎样理解指令','机械臂的作用是什么','这个框架解决什么问题','请介绍一下基本含义'],
+course:['应该学什么课','需要什么学习基础','有哪些课程和学习资料','从哪里开始学习','有什么前置知识','推荐学习路径','入门该读哪份大纲','以后去哪门课继续学','工具要求哪些基础','给我课程入口','模仿学习需要先学什么','坐标变换如何入门','MoveIt从哪里学','VLA有什么学习资料','哪些课程覆盖运动学'],
+compare:['这两种方法有什么区别','请比较这两个方案','哪个路线更适合','两者有什么优缺点','这个方法和另一个怎么选','比较一下作用和局限','两条路线怎么取舍','它们是替代关系吗','两个工具对比一下','请区分两个概念','模块化与VLA有什么区别','OpenVLA和SmolVLA对比','ROS和MoveIt有什么不同','大模型和小模型怎么选择','比较两者的适用范围'],
+trace:['结论的来源是什么','有什么证据支持','谁提出了这个方法','哪个团队开发了工具','如何找到原论文','这个关系有依据吗','查找引用出处','想看官方文档','作者和机构是什么关系','来源在哪里核实','OpenVLA作者是谁','MoveIt是谁开发的','模仿学习的论文在哪','闭环控制依据在哪','这个数据集由谁提供'],
+boundary:['这个方法有什么局限','什么情况下失败','有什么风险和不足','能保证一定正确吗','有哪些适用条件','什么时候不适合用','有什么反例','有什么仍不确定','哪些内容待核实','会不会误导用户','VLA有哪些限制','MoveIt不能保证什么','坐标变换可能出现哪些错误','机械臂会不会抓错','OpenVLA的不足有哪些']};
+class IntentModel{constructor(){this.classes=Object.keys(samples);this.vocab=new Set();this.counts={};this.total={};for(const c of this.classes){this.counts[c]={};this.total[c]=0;for(const q of samples[c])for(const t of tokens(q)){this.vocab.add(t);this.counts[c][t]=(this.counts[c][t]||0)+1;this.total[c]++;}}}predict(q){const ts=tokens(q).filter(t=>this.vocab.has(t));return this.classes.map(c=>({label:c,score:ts.reduce((s,t)=>s+Math.log(((this.counts[c][t]||0)+1)/(this.total[c]+this.vocab.size)),0)})).sort((a,b)=>b.score-a.score)[0].label;}}
+const model=new IntentModel();
+const aliases={task:['桌面','整理','收纳'],vision:['感知','视觉','图像','遮挡'],ground:['grounding','指令','语言理解','歧义'],frames:['坐标','标定','变换'],vla:['vla','视觉语言动作','视觉—语言—动作'],imitation:['模仿','示范','diffusion','流匹配'],control:['闭环','控制','反馈','延迟'],hardware:['机械臂','夹爪','硬件','so-101'],stack:['ros','moveit','lerobot','工具','框架'],data:['数据','基准','轨迹'],evaluate:['评测','评价','成功率','测试'],courses:['课程','前置','学习路径'],openvla:['openvla'],deepmind:['rt-2','deepmind'],pi:['π0','pi0','openpi','physical intelligence'],huggingface:['smolvla','hugging face'],oxe:['open x','oxe','跨具身'],libero:['libero'],venues:['会议','ccf','corl','rss'],value:['费用','付费','成本','维护','商业'],problem:['定义问题','问题定义'],system:['系统观','故障','抓不住'],compare:['反例','对照'],tradeoff:['取舍'],evolution:['发展观','演进'],habits:['成长','协作','习惯']};
+function rank(q,atlas){const low=q.toLowerCase(),qt=new Set(tokens(q));return atlas.nodes.map(n=>{const ns=new Set(tokens([n.label,n.sub,n.summary,n.why,n.example].join(' '))),matches=(aliases[n.id]||[]).filter(s=>low.includes(s));return {node:n,matched:matches.length,score:(matches.length?Math.max(...matches.map(s=>s.length))*.25:0)+[...qt].filter(s=>ns.has(s)).length/Math.sqrt(qt.size*ns.size||1)};}).sort((a,b)=>b.score-a.score);}
+function answer(q,atlas){q=String(q||'').trim().slice(0,500);const intent=model.predict(q),rows=rank(q,atlas),found=rows.filter(r=>r.matched);const result=(lead,sections=[],evidence=[],kind=intent)=>({lead,sections,evidence,intent:kind});
+if(/我们学校|本校|我校|我.*专业|学分|开课学期/.test(q))return result('尚未获得你们学校、专业和年级的培养方案，不能确认本校课程。以下是已核查的公开学习入口。',atlas.coursePaths.map(p=>({title:p.course,text:p.content+'；'+p.coverage+'。实践建议：'+p.practice,sources:[p.source]})),['courses'],'course');
+if(/成功率|最快|最强|排名|实时价格/.test(q)&&/多少|最高|哪个|谁|排名|价格/.test(q))return result('本样本没有同设备的模型实测或真机成功率，不能给出可靠排名。请按任务、设备、数据预算和评价条件比较原论文。',[{title:'可核查的入口',text:'分别阅读原论文的任务设置与限制，不把不同实验的数字直接排列。',sources:['R01','R04','R07']}],['evaluate','compare'],'boundary');
+if(!found.length||found.every(r=>['courses','compare','habits'].includes(r.node.id)))return result('地图中没有足够依据回答。请明确一个机器人相关概念、模型或问题；我不会补造课程、合作关系或实测结果。',[],[],'unknown');
+if(/模块化/.test(q)&&/vla|端到端/i.test(q))return result('以下比较的是设计路线，不是同设备实测排名。两条路线也可能结合。',[{title:'模块化路线',text:'显式组织感知、目标位姿、规划和控制，便于逐环节定位；环境变化时需要检查各模块和接口。',sources:['R15','R16']},{title:'VLA 路线',text:'由视觉与语言条件预测动作，研究重点包括语言泛化、数据复用和适配；部署仍受物理接口与训练条件约束。',sources:['R01','R02','R03']},{title:'本项目的判断',text:'先明确桌面任务与设备，再在固定条件下比较；没有证据就不宣布某条路线全面更优。',sources:['R08','R20']}],['vla','stack','tradeoff'],'compare');
+const selected=found.slice(0,intent==='compare'?2:3).map(x=>x.node);
+if(intent==='compare'&&selected.length<2)return result('请写出两个地图中的比较对象，例如“比较 OpenVLA 和 SmolVLA”。没有第二个对象时无法形成明确对照。',[],selected.map(n=>n.id));
+const sections=selected.slice(0,2).map(n=>({title:n.label,text:intent==='course'?n.prereq+' 下一步：'+n.next:intent==='trace'?n.why+' 内容性质：'+n.fact+'。':intent==='boundary'?n.limits:intent==='compare'?n.summary+' 条件与局限：'+n.limits:n.summary+' 例子：'+n.example+' 局限：'+n.limits,sources:n.sources}));
+if(intent==='course')sections.push(...atlas.coursePaths.map(p=>({title:p.course,text:p.content+'；'+p.coverage,sources:[p.source]})));
+return result('以下摘录地图中的解释与来源。文献能力、样本设想和未完成的实践分别标注；这不是实时联网或机器人控制。',sections,selected.map(n=>n.id));}
+const api={tokens,samples,model,rank,answer};root.MapAI=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);
